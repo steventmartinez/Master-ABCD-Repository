@@ -2,8 +2,8 @@ library(ggplot2)
 library(readr)
 library(dplyr)
 
-dataDir<-"/Users/monica/Documents/Projects/ABCD/NDAR_downloads/"
-outputDir<-"/Users/monica/Documents/Projects/ABCD/R_scripts"
+dataDir<-"/ABCD/"
+outputDir<-"/ABCD/output"
 
 ######### Read Files into R #########
 Screener<-read.delim(paste(dataDir,"Questionnaire/abcd_screen01.txt",sep=""), na.strings=c(""," ","NA"), stringsAsFactors=FALSE)
