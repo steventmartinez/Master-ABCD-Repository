@@ -2,8 +2,6 @@ library(ggplot2)
 library(readr)
 library(dplyr)
 
-rm(list=ls())
-
 dataDir<-"/Users/monica/Documents/Projects/ABCD/NDAR_downloads/"
 outputDir<-"/Users/monica/Documents/Projects/ABCD/R_scripts"
 
