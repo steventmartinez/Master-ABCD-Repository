@@ -12,7 +12,7 @@ mymean <- function(x)mean(x,na.rm = any(!is.na(x)))
 
 ######### Read files into R #########
 Demographics <- read.delim(paste(dataDir,"abcddemo01.txt",sep=""), na.strings=c(""," ","NA"), stringsAsFactors=FALSE) %>% slice(-1)
-Screener     <- read.delim(paste(dataDir,"abcd_screen01.txt",sep=""), na.strings=c(""," ","NA"), stringsAsFactors=FALSE)
+Screener     <- read.delim(paste(dataDir,"abcd_screen01.txt",sep=""), na.strings=c(""," ","NA"), stringsAsFactors=FALSE) %>% slice(-1)
 RAChecklist  <- read.delim(paste(dataDir,"abcd_ra01.txt",sep=""), na.strings=c(""," ","NA"), stringsAsFactors=FALSE) %>% slice(-1)
 ScannerID    <- read.delim(paste(dataDir,"abcd_mri01.txt",sep=""), na.strings=c(""," ","NA"), stringsAsFactors=FALSE) %>% slice(-1)
 Family       <- read.delim(paste(dataDir,"acspsw02.txt",sep=""), na.strings=c(""," ","NA"), stringsAsFactors=FALSE) %>% slice(-1)
@@ -46,6 +46,7 @@ MID          <- unique(subset(MID, select = c(subjectkey, tfmri_mid_beh_switchfl
 
 ######### Convert to numeric #########
 Demographics[, 2]                  <- sapply(Demographics[, 2], as.numeric)
+Screener[,2:ncol(Screener)]        <- sapply(Screener[, 2], as.numeric)
 NIH_toolbox[, 2:ncol(NIH_toolbox)] <- sapply(NIH_toolbox[, 2:ncol(NIH_toolbox)], as.numeric)
 Pearson[, 2:ncol(Pearson)]         <- sapply(Pearson[, 2:ncol(Pearson)], as.numeric)
 CashChoice[, 2]                    <- sapply(CashChoice[, 2], as.numeric)
@@ -64,7 +65,7 @@ RecMem$overall_dprime              <- apply(RecMem[c('tfmri_rec_all_beh_posf_dpr
 
 ######### Merge, clean, crop data #########
 data.merge <- Reduce(function(x,y) merge(x = x, y = y, by = "subjectkey", all.x = TRUE, all.y = TRUE), list(Demographics, Screener, RAChecklist, ScannerID, Family, NIH_toolbox, Pearson, CashChoice, LittleMan, Nback, RecMem, SST, MID))
-data.clean <- data.merge[ which(data.merge$scrn_asd==0 & data.merge$scrn_medcond_other==0), ]
+data.clean <- data.merge[ which(data.merge$scrn_asd==0 & data.merge$scrn_eps_other!=1), ]
 data.crop  <- subset(data.clean, select = c(nihtbx_picvocab_uncorrected, nihtbx_flanker_uncorrected, nihtbx_list_uncorrected, nihtbx_cardsort_uncorrected, nihtbx_pattern_uncorrected, nihtbx_picture_uncorrected, nihtbx_reading_uncorrected, pea_wiscv_tss, lmt_scr_efficiency, tfmri_nb_all_beh_c0b_rate, tfmri_nb_all_beh_c2b_rate, overall_dprime, tfmri_sst_all_beh_total_meanrt, tfmri_mid_all_beh_t_earnings))
 
 ######### Exclude outliers #########
