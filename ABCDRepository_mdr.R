@@ -46,7 +46,8 @@ MID          <- unique(subset(MID, select = c(subjectkey, tfmri_mid_beh_switchfl
 
 ######### Convert to numeric #########
 Demographics[, 2]                  <- sapply(Demographics[, 2], as.numeric)
-Screener[,2:ncol(Screener)]        <- sapply(Screener[, 2], as.numeric)
+Screener[,2:ncol(Screener)]        <- sapply(Screener[, 2:ncol(Screener)], as.numeric)
+Family[,2]                         <- sapply(Family[, 2], as.numeric)
 NIH_toolbox[, 2:ncol(NIH_toolbox)] <- sapply(NIH_toolbox[, 2:ncol(NIH_toolbox)], as.numeric)
 Pearson[, 2:ncol(Pearson)]         <- sapply(Pearson[, 2:ncol(Pearson)], as.numeric)
 CashChoice[, 2]                    <- sapply(CashChoice[, 2], as.numeric)
@@ -56,31 +57,41 @@ RecMem[, 3:ncol(RecMem)]           <- sapply(RecMem[, 3:ncol(RecMem)], as.numeri
 SST[, 4:ncol(SST)]                 <- sapply(SST[, 4:ncol(SST)], as.numeric)
 MID[, 4:ncol(MID)]                 <- sapply(MID[, 4:ncol(MID)], as.numeric)
 
-######### Add columns #########
+######### Add performance measure columns #########
 Pearson$pea_ravlt_sd_trial_itov_tc <- apply(Pearson[c('pea_ravlt_sd_trial_i_tc', 'pea_ravlt_sd_trial_ii_tc', 'pea_ravlt_sd_trial_iii_tc', 'pea_ravlt_sd_trial_iv_tc', 'pea_ravlt_sd_trial_v_tc')], 1, mysum)
 Pearson$pea_ravlt_sd_trial_itov_tr <- apply(Pearson[c('pea_ravlt_sd_trial_i_tr', 'pea_ravlt_sd_trial_ii_tr', 'pea_ravlt_sd_trial_iii_tr', 'pea_ravlt_sd_trial_iv_tr', 'pea_ravlt_sd_trial_v_tr')], 1, mysum)
 Pearson$pea_ravlt_sd_trial_itov_ti <- apply(Pearson[c('pea_ravlt_sd_trial_i_ti', 'pea_ravlt_sd_trial_ii_ti', 'pea_ravlt_sd_trial_iii_ti', 'pea_ravlt_sd_trial_iv_ti', 'pea_ravlt_sd_trial_v_ti')], 1, mysum)
 Pearson$pea_ravlt_tc               <- apply(Pearson[c('pea_ravlt_sd_trial_i_tc', 'pea_ravlt_sd_trial_ii_tc', 'pea_ravlt_sd_trial_iii_tc', 'pea_ravlt_sd_trial_iv_tc', 'pea_ravlt_sd_trial_v_tc', 'pea_ravlt_sd_listb_tc', 'pea_ravlt_sd_trial_vi_tc', 'pea_ravlt_ld_trial_vii_tc')], 1, mysum)
 RecMem$overall_dprime              <- apply(RecMem[c('tfmri_rec_all_beh_posf_dpr', 'tfmri_rec_all_beh_neutf_dp', 'tfmri_rec_all_beh_negf_dp', 'tfmri_rec_all_beh_place_dp')], 1, mymean)
 
+######### Invert SSRT #########
+SST$tfmri_sst_all_beh_total_meanrt <- SST$tfmri_sst_all_beh_total_meanrt*-1
+
+######### Remove cash choice option 3 ("don't know") #########
+CashChoice$cash_choice_task[CashChoice$cash_choice_task == 3] <- NA
+
 ######### Merge, clean, crop data #########
 data.merge <- Reduce(function(x,y) merge(x = x, y = y, by = "subjectkey", all.x = TRUE, all.y = TRUE), list(Demographics, Screener, RAChecklist, ScannerID, Family, NIH_toolbox, Pearson, CashChoice, LittleMan, Nback, RecMem, SST, MID))
-data.clean <- data.merge[ which(data.merge$scrn_asd==0 & data.merge$scrn_eps_other!=1), ]
-data.crop  <- subset(data.clean, select = c(nihtbx_picvocab_uncorrected, nihtbx_flanker_uncorrected, nihtbx_list_uncorrected, nihtbx_cardsort_uncorrected, nihtbx_pattern_uncorrected, nihtbx_picture_uncorrected, nihtbx_reading_uncorrected, pea_wiscv_tss, lmt_scr_efficiency, tfmri_nb_all_beh_c0b_rate, tfmri_nb_all_beh_c2b_rate, overall_dprime, tfmri_sst_all_beh_total_meanrt, tfmri_mid_all_beh_t_earnings))
+data.crop  <- data.merge[ which(data.merge$scrn_asd==0 & (data.merge$scrn_epls!=1 | is.na(data.merge$scrn_epls))), ]
+data.crop  <- subset(data.crop, select = c(rel_relationship, nihtbx_list_uncorrected, nihtbx_picvocab_uncorrected, nihtbx_flanker_uncorrected, nihtbx_cardsort_uncorrected, nihtbx_pattern_uncorrected, nihtbx_picture_uncorrected, nihtbx_reading_uncorrected, pea_wiscv_tss, pea_ravlt_sd_trial_itov_tc, pea_ravlt_sd_listb_tc, pea_ravlt_sd_trial_vi_tc, pea_ravlt_ld_trial_vii_tc, cash_choice_task, lmt_scr_efficiency, tfmri_nb_all_beh_c0b_rate, tfmri_nb_all_beh_c2b_rate, overall_dprime, tfmri_sst_all_beh_total_meanrt, tfmri_mid_all_beh_t_earnings))
 
 ######### Exclude outliers #########
 sd_thresh <- 3
 data.excl <- data.crop
 
-for (i in 1:length(data.excl)) {
+for (i in 2:length(data.excl)) {
     tmp_mean <- mean(data.excl[,i], na.rm=TRUE)
     tmp_sd   <- sd(data.excl[,i], na.rm=TRUE)
     data.excl[which((data.excl[,i]<=(tmp_mean - sd_thresh*tmp_sd) | data.excl[,i]>=(tmp_mean + sd_thresh*tmp_sd))), i]<-NA
     rm(tmp_mean, tmp_sd)
 }
 
+######### Exclude family members #########
+data.family <- data.excl[ which(data.excl$rel_relationship==0), ]
+
 ######### Visualization #########
-data.vis <- data.crop
+data.vis <- data.excl
+#data.vis <- data.family
 corrplot(cor(data.vis, use="pairwise.complete.obs", method="spearman"),method="color",tl.cex=.4,tl.col = "black")#,order="hclust")
 ggplot(data.vis, aes(x=tfmri_nb_all_beh_c2b_rate, y=nihtbx_list_uncorrected)) + geom_point(color="blue") + geom_smooth(method=lm, se=FALSE, linetype="dashed", color="darkred")
 cor.test(data.vis$tfmri_nb_all_beh_c2b_rate,data.vis$nihtbx_list_uncorrected,use="pairwise.complete.obs")
