@@ -32,7 +32,7 @@ Demographics <- unique(subset(Demographics, select = c(subjectkey, interview_age
 Screener     <- unique(subset(Screener, select = c(subjectkey, scrn_asd, scrn_medcond_other, scrn_epls, scrn_seizure)))
 RAChecklist  <- unique(subset(RAChecklist, select = c(subjectkey, ra_scan_check_list_rcom, ra_scan_cl_mid_scan_lap, ra_scan_check_list_vemorc, ra_scan_cl_nbac_scan_lap, ra_scan_check_list_sstrc, ra_scan_cl_sst_scan_lap)))
 ScannerID    <- unique(subset(ScannerID, select = c(subjectkey, mri_info_deviceserialnumber)))
-Family       <- unique(subset(Family, select = c(subjectkey, rel_relationship)))
+Family       <- unique(subset(Family, select = c(subjectkey, rel_relationship, rel_family_id)))
 
 NIH_toolbox  <- unique(subset(NIH_toolbox, select = c(subjectkey, nihtbx_picvocab_uncorrected, nihtbx_flanker_uncorrected, nihtbx_list_uncorrected, nihtbx_cardsort_uncorrected, nihtbx_pattern_uncorrected, nihtbx_picture_uncorrected, nihtbx_reading_uncorrected, nihtbx_fluidcomp_uncorrected, nihtbx_cryst_uncorrected, nihtbx_totalcomp_uncorrected)))
 Pearson      <- unique(subset(Pearson, select = c(subjectkey, pea_wiscv_tss, pea_ravlt_sd_trial_i_tc, pea_ravlt_sd_trial_ii_tc, pea_ravlt_sd_trial_iii_tc, pea_ravlt_sd_trial_iv_tc, pea_ravlt_sd_trial_v_tc, pea_ravlt_sd_trial_i_tr, pea_ravlt_sd_trial_ii_tr, pea_ravlt_sd_trial_iii_tr, pea_ravlt_sd_trial_iv_tr, pea_ravlt_sd_trial_v_tr, pea_ravlt_sd_trial_i_ti, pea_ravlt_sd_trial_ii_ti, pea_ravlt_sd_trial_iii_ti, pea_ravlt_sd_trial_iv_ti, pea_ravlt_sd_trial_v_ti, pea_ravlt_sd_listb_tc, pea_ravlt_sd_listb_tr, pea_ravlt_sd_listb_ti, pea_ravlt_sd_trial_vi_tc, pea_ravlt_sd_trial_vi_tr, pea_ravlt_sd_trial_vi_ti, pea_ravlt_ld_trial_vii_tc, pea_ravlt_ld_trial_vii_tr, pea_ravlt_ld_trial_vii_ti)))
@@ -47,7 +47,7 @@ MID          <- unique(subset(MID, select = c(subjectkey, tfmri_mid_beh_switchfl
 ######### Convert to numeric #########
 Demographics[, 2]                  <- sapply(Demographics[, 2], as.numeric)
 Screener[,2:ncol(Screener)]        <- sapply(Screener[, 2:ncol(Screener)], as.numeric)
-Family[,2]                         <- sapply(Family[, 2], as.numeric)
+Family[,2:ncol(Family)]            <- sapply(Family[, 2:ncol(Family)], as.numeric)
 NIH_toolbox[, 2:ncol(NIH_toolbox)] <- sapply(NIH_toolbox[, 2:ncol(NIH_toolbox)], as.numeric)
 Pearson[, 2:ncol(Pearson)]         <- sapply(Pearson[, 2:ncol(Pearson)], as.numeric)
 CashChoice[, 2]                    <- sapply(CashChoice[, 2], as.numeric)
@@ -73,13 +73,14 @@ CashChoice$cash_choice_task[CashChoice$cash_choice_task == 3] <- NA
 ######### Merge, clean, crop data #########
 data.merge <- Reduce(function(x,y) merge(x = x, y = y, by = "subjectkey", all.x = TRUE, all.y = TRUE), list(Demographics, Screener, RAChecklist, ScannerID, Family, NIH_toolbox, Pearson, CashChoice, LittleMan, Nback, RecMem, SST, MID))
 data.crop  <- data.merge[ which(data.merge$scrn_asd==0 & (data.merge$scrn_epls!=1 | is.na(data.merge$scrn_epls))), ]
-data.crop  <- subset(data.crop, select = c(rel_relationship, nihtbx_list_uncorrected, nihtbx_picvocab_uncorrected, nihtbx_flanker_uncorrected, nihtbx_cardsort_uncorrected, nihtbx_pattern_uncorrected, nihtbx_picture_uncorrected, nihtbx_reading_uncorrected, pea_wiscv_tss, pea_ravlt_sd_trial_itov_tc, pea_ravlt_sd_listb_tc, pea_ravlt_sd_trial_vi_tc, pea_ravlt_ld_trial_vii_tc, cash_choice_task, lmt_scr_efficiency, tfmri_nb_all_beh_c0b_rate, tfmri_nb_all_beh_c2b_rate, overall_dprime, tfmri_sst_all_beh_total_meanrt, tfmri_mid_all_beh_t_earnings))
+#data.crop  <- subset(data.crop, select = c(rel_family_id, nihtbx_list_uncorrected, nihtbx_picvocab_uncorrected, nihtbx_flanker_uncorrected, nihtbx_cardsort_uncorrected, nihtbx_pattern_uncorrected, nihtbx_picture_uncorrected, nihtbx_reading_uncorrected, pea_wiscv_tss, pea_ravlt_sd_trial_vi_tc, pea_ravlt_ld_trial_vii_tc, cash_choice_task, lmt_scr_efficiency, tfmri_nb_all_beh_c0b_rate, tfmri_nb_all_beh_c2b_rate, overall_dprime, tfmri_sst_all_beh_total_meanrt, tfmri_mid_all_beh_t_earnings))
+data.crop  <- subset(data.crop, select = c(rel_family_id, cash_choice_task, lmt_scr_efficiency, nihtbx_flanker_uncorrected, nihtbx_cardsort_uncorrected, nihtbx_pattern_uncorrected, nihtbx_picture_uncorrected, pea_ravlt_sd_trial_vi_tc, pea_ravlt_ld_trial_vii_tc, pea_wiscv_tss, nihtbx_list_uncorrected, nihtbx_picvocab_uncorrected, nihtbx_reading_uncorrected, tfmri_mid_all_beh_t_earnings, tfmri_sst_all_beh_total_meanrt, overall_dprime, tfmri_nb_all_beh_c0b_rate, tfmri_nb_all_beh_c2b_rate))
 
 ######### Exclude outliers #########
 sd_thresh <- 3
 data.excl <- data.crop
 
-for (i in 2:length(data.excl)) {
+for (i in 2:ncol(data.excl)) {
     tmp_mean <- mean(data.excl[,i], na.rm=TRUE)
     tmp_sd   <- sd(data.excl[,i], na.rm=TRUE)
     data.excl[which((data.excl[,i]<=(tmp_mean - sd_thresh*tmp_sd) | data.excl[,i]>=(tmp_mean + sd_thresh*tmp_sd))), i]<-NA
@@ -87,12 +88,28 @@ for (i in 2:length(data.excl)) {
 }
 
 ######### Exclude family members #########
-data.family <- data.excl[ which(data.excl$rel_relationship==0), ]
+family_idx <- data.frame()
+for (i in data.excl$rel_family_id) {
+    tmp_ids <- (which(data.excl$rel_family_id %in% i))
+    family_idx <- rbind(tmp_ids[1],family_idx)
+    rm(tmp_ids)
+}
+family_idx  <- unique(family_idx)
+data.family <- data.excl[family_idx$X1L, ]
+
+######### Correlation matrices #########
+cormat.crop   <- cor(data.crop[,2:ncol(data.crop)], use="pairwise.complete.obs", method="spearman")
+corrplot(cormat.crop,method="color",tl.cex=.4,tl.col = "black")#,order="hclust")
+
+cormat.excl   <- cor(data.excl[,2:ncol(data.excl)], use="pairwise.complete.obs", method="spearman")
+corrplot(cormat.excl,method="color",tl.cex=.4,tl.col = "black")#,order="hclust")
+
+cormat.family <- cor(data.family[,2:ncol(data.family)], use="pairwise.complete.obs", method="spearman")
+corrplot(cormat.family,method="color",tl.cex=.4,tl.col = "black")#,order="hclust")
 
 ######### Visualization #########
 data.vis <- data.excl
 #data.vis <- data.family
-corrplot(cor(data.vis, use="pairwise.complete.obs", method="spearman"),method="color",tl.cex=.4,tl.col = "black")#,order="hclust")
 ggplot(data.vis, aes(x=tfmri_nb_all_beh_c2b_rate, y=nihtbx_list_uncorrected)) + geom_point(color="blue") + geom_smooth(method=lm, se=FALSE, linetype="dashed", color="darkred")
 cor.test(data.vis$tfmri_nb_all_beh_c2b_rate,data.vis$nihtbx_list_uncorrected,use="pairwise.complete.obs")
 
