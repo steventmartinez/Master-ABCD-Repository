@@ -15,6 +15,7 @@ Demographics <- read.delim(paste(dataDir,"abcddemo01.txt",sep=""), na.strings=c(
 Screener     <- read.delim(paste(dataDir,"abcd_screen01.txt",sep=""), na.strings=c(""," ","NA"), stringsAsFactors=FALSE) %>% slice(-1)
 RAChecklist  <- read.delim(paste(dataDir,"abcd_ra01.txt",sep=""), na.strings=c(""," ","NA"), stringsAsFactors=FALSE) %>% slice(-1)
 ScannerID    <- read.delim(paste(dataDir,"abcd_mri01.txt",sep=""), na.strings=c(""," ","NA"), stringsAsFactors=FALSE) %>% slice(-1)
+SiteID       <- read.delim(paste(dataDir,"abcd_lt01.txt",sep=""), na.strings=c(""," ","NA"), stringsAsFactors=FALSE) %>% slice(-1)
 Family       <- read.delim(paste(dataDir,"acspsw02.txt",sep=""), na.strings=c(""," ","NA"), stringsAsFactors=FALSE) %>% slice(-1)
 
 NIH_toolbox  <- read.delim(paste(dataDir,"abcd_tbss01.txt",sep=""), na.strings=c(""," ","NA"), stringsAsFactors=FALSE) %>% slice(-1)
@@ -32,6 +33,7 @@ Demographics <- unique(subset(Demographics, select = c(subjectkey, interview_age
 Screener     <- unique(subset(Screener, select = c(subjectkey, scrn_asd, scrn_medcond_other, scrn_epls, scrn_seizure)))
 RAChecklist  <- unique(subset(RAChecklist, select = c(subjectkey, ra_scan_check_list_rcom, ra_scan_cl_mid_scan_lap, ra_scan_check_list_vemorc, ra_scan_cl_nbac_scan_lap, ra_scan_check_list_sstrc, ra_scan_cl_sst_scan_lap)))
 ScannerID    <- unique(subset(ScannerID, select = c(subjectkey, mri_info_deviceserialnumber)))
+SiteID       <- unique(subset(SiteID, select = c(subjectkey, site_id_l)))
 Family       <- unique(subset(Family, select = c(subjectkey, rel_relationship, rel_family_id)))
 
 NIH_toolbox  <- unique(subset(NIH_toolbox, select = c(subjectkey, nihtbx_picvocab_uncorrected, nihtbx_flanker_uncorrected, nihtbx_list_uncorrected, nihtbx_cardsort_uncorrected, nihtbx_pattern_uncorrected, nihtbx_picture_uncorrected, nihtbx_reading_uncorrected, nihtbx_fluidcomp_uncorrected, nihtbx_cryst_uncorrected, nihtbx_totalcomp_uncorrected)))
@@ -71,7 +73,7 @@ SST$tfmri_sst_all_beh_total_meanrt <- SST$tfmri_sst_all_beh_total_meanrt*-1
 CashChoice$cash_choice_task[CashChoice$cash_choice_task == 3] <- NA
 
 ######### Merge, clean, crop data #########
-data.merge <- Reduce(function(x,y) merge(x = x, y = y, by = "subjectkey", all.x = TRUE, all.y = TRUE), list(Demographics, Screener, RAChecklist, ScannerID, Family, NIH_toolbox, Pearson, CashChoice, LittleMan, Nback, RecMem, SST, MID))
+data.merge <- Reduce(function(x,y) merge(x = x, y = y, by = "subjectkey", all.x = TRUE, all.y = TRUE), list(Demographics, Screener, RAChecklist, ScannerID, SiteID, Family, NIH_toolbox, Pearson, CashChoice, LittleMan, Nback, RecMem, SST, MID))
 data.crop  <- data.merge[ which(data.merge$scrn_asd==0 & (data.merge$scrn_epls!=1 | is.na(data.merge$scrn_epls))), ]
 #data.crop  <- subset(data.crop, select = c(rel_family_id, nihtbx_list_uncorrected, nihtbx_picvocab_uncorrected, nihtbx_flanker_uncorrected, nihtbx_cardsort_uncorrected, nihtbx_pattern_uncorrected, nihtbx_picture_uncorrected, nihtbx_reading_uncorrected, pea_wiscv_tss, pea_ravlt_sd_trial_vi_tc, pea_ravlt_ld_trial_vii_tc, cash_choice_task, lmt_scr_efficiency, tfmri_nb_all_beh_c0b_rate, tfmri_nb_all_beh_c2b_rate, overall_dprime, tfmri_sst_all_beh_total_meanrt, tfmri_mid_all_beh_t_earnings))
 data.crop  <- subset(data.crop, select = c(rel_family_id, cash_choice_task, lmt_scr_efficiency, nihtbx_flanker_uncorrected, nihtbx_cardsort_uncorrected, nihtbx_pattern_uncorrected, nihtbx_picture_uncorrected, pea_ravlt_sd_trial_vi_tc, pea_ravlt_ld_trial_vii_tc, pea_wiscv_tss, nihtbx_list_uncorrected, nihtbx_picvocab_uncorrected, nihtbx_reading_uncorrected, tfmri_mid_all_beh_t_earnings, tfmri_sst_all_beh_total_meanrt, overall_dprime, tfmri_nb_all_beh_c0b_rate, tfmri_nb_all_beh_c2b_rate))
@@ -108,8 +110,10 @@ cormat.family <- cor(data.family[,2:ncol(data.family)], use="pairwise.complete.o
 corrplot(cormat.family,method="color",tl.cex=.4,tl.col = "black")#,order="hclust")
 
 ######### Visualization #########
-data.vis <- data.excl
-#data.vis <- data.family
-ggplot(data.vis, aes(x=tfmri_nb_all_beh_c2b_rate, y=nihtbx_list_uncorrected)) + geom_point(color="blue") + geom_smooth(method=lm, se=FALSE, linetype="dashed", color="darkred")
-cor.test(data.vis$tfmri_nb_all_beh_c2b_rate,data.vis$nihtbx_list_uncorrected,use="pairwise.complete.obs")
+data.vis <- data.family
+#t.test(data.vis$nihtbx_list_uncorrected~data.vis$cash_choice_task)
+
+ggplot(data.vis[,2:ncol(data.vis)], aes(x=cash_choice_task, y=nihtbx_picvocab_uncorrected)) + geom_point(color="blue") + geom_smooth(method=lm, se=FALSE, linetype="dashed", color="darkred")
+ggplot(data.vis[,2:ncol(data.vis)], aes(x=cash_choice_task, y=nihtbx_picture_uncorrected)) + geom_point(color="blue") + geom_smooth(method=lm, se=FALSE, linetype="dashed", color="darkred")
+
 
