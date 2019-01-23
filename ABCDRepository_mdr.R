@@ -5,7 +5,7 @@ library(ggplot2)
 rm(list=ls())
 
 dataDir   <-"/Users/monica/Documents/Projects/ABCD/WM_paper/Data/ABCDStudyNDA/"
-outputDir <-"/Users/monica/Documents/Projects/ABCD/WM_paper/Data/ABCDStudyNDA/"
+outputDir <-"/Users/monica/Documents/Projects/ABCD/WM_paper/Data/"
 
 mysum  <- function(x)sum(x,na.rm = any(!is.na(x)))
 mymean <- function(x)mean(x,na.rm = any(!is.na(x)))
@@ -75,19 +75,26 @@ CashChoice$cash_choice_task[CashChoice$cash_choice_task == 3] <- NA
 ######### Merge, clean, crop data #########
 data.merge <- Reduce(function(x,y) merge(x = x, y = y, by = "subjectkey", all.x = TRUE, all.y = TRUE), list(Demographics, Screener, RAChecklist, ScannerID, SiteID, Family, NIH_toolbox, Pearson, CashChoice, LittleMan, Nback, RecMem, SST, MID))
 data.crop  <- data.merge[ which(data.merge$scrn_asd==0 & (data.merge$scrn_epls!=1 | is.na(data.merge$scrn_epls))), ]
-#data.crop  <- subset(data.crop, select = c(rel_family_id, nihtbx_list_uncorrected, nihtbx_picvocab_uncorrected, nihtbx_flanker_uncorrected, nihtbx_cardsort_uncorrected, nihtbx_pattern_uncorrected, nihtbx_picture_uncorrected, nihtbx_reading_uncorrected, pea_wiscv_tss, pea_ravlt_sd_trial_vi_tc, pea_ravlt_ld_trial_vii_tc, cash_choice_task, lmt_scr_efficiency, tfmri_nb_all_beh_c0b_rate, tfmri_nb_all_beh_c2b_rate, overall_dprime, tfmri_sst_all_beh_total_meanrt, tfmri_mid_all_beh_t_earnings))
-data.crop  <- subset(data.crop, select = c(rel_family_id, cash_choice_task, lmt_scr_efficiency, nihtbx_flanker_uncorrected, nihtbx_cardsort_uncorrected, nihtbx_pattern_uncorrected, nihtbx_picture_uncorrected, pea_ravlt_sd_trial_vi_tc, pea_ravlt_ld_trial_vii_tc, pea_wiscv_tss, nihtbx_list_uncorrected, nihtbx_picvocab_uncorrected, nihtbx_reading_uncorrected, tfmri_mid_all_beh_t_earnings, tfmri_sst_all_beh_total_meanrt, overall_dprime, tfmri_nb_all_beh_c0b_rate, tfmri_nb_all_beh_c2b_rate))
+data.crop  <- subset(data.crop, select = c(rel_family_id, site_id_l, ra_scan_cl_mid_scan_lap, ra_scan_cl_nbac_scan_lap, ra_scan_cl_sst_scan_lap, nihtbx_list_uncorrected, nihtbx_reading_uncorrected, nihtbx_picvocab_uncorrected, tfmri_nb_all_beh_c2b_rate, pea_ravlt_sd_trial_vi_tc, pea_wiscv_tss, pea_ravlt_ld_trial_vii_tc, nihtbx_picture_uncorrected, tfmri_nb_all_beh_c0b_rate, nihtbx_cardsort_uncorrected, nihtbx_flanker_uncorrected, lmt_scr_efficiency, overall_dprime, nihtbx_pattern_uncorrected, tfmri_mid_all_beh_t_earnings, tfmri_sst_all_beh_total_meanrt, cash_choice_task))
+write.csv(data.crop,file=paste(outputDir,"data.crop.csv",sep=""))
 
 ######### Exclude outliers #########
-sd_thresh <- 3
+sd_thresh <- 2.5
 data.excl <- data.crop
 
-for (i in 2:ncol(data.excl)) {
+for (i in 6:ncol(data.excl)) {
     tmp_mean <- mean(data.excl[,i], na.rm=TRUE)
     tmp_sd   <- sd(data.excl[,i], na.rm=TRUE)
     data.excl[which((data.excl[,i]<=(tmp_mean - sd_thresh*tmp_sd) | data.excl[,i]>=(tmp_mean + sd_thresh*tmp_sd))), i]<-NA
     rm(tmp_mean, tmp_sd)
 }
+
+######### Count NAs #########
+data.tmp1 <- data.crop$nihtbx_list_uncorrected
+data.tmp2 <- data.excl$nihtbx_list_uncorrected
+round(sum(is.na(data.tmp1))/length(data.tmp1)*100,digits=2)
+round((sum(is.na(data.tmp2))-sum(is.na(data.tmp1)))/(length(data.tmp1)-sum(is.na(data.tmp1)))*100,digits=2)
+rm(data.tmp1, data.tmp2)
 
 ######### Exclude family members #########
 family_idx <- data.frame()
@@ -99,15 +106,47 @@ for (i in data.excl$rel_family_id) {
 family_idx  <- unique(family_idx)
 data.family <- data.excl[family_idx$X1L, ]
 
+######### Exclude participants who completed neuroimaging tasks outside the scanner #########
+data.scan <- data.crop[ which(data.crop$ra_scan_cl_mid_scan_lap %in% 1 & data.crop$ra_scan_cl_sst_scan_lap %in% 1 & data.crop$ra_scan_cl_nbac_scan_lap %in% 1), ]
+
 ######### Correlation matrices #########
-cormat.crop   <- cor(data.crop[,2:ncol(data.crop)], use="pairwise.complete.obs", method="spearman")
+cormat.crop   <- cor(data.crop[,6:ncol(data.crop)], use="pairwise.complete.obs", method="spearman")
 corrplot(cormat.crop,method="color",tl.cex=.4,tl.col = "black")#,order="hclust")
 
-cormat.excl   <- cor(data.excl[,2:ncol(data.excl)], use="pairwise.complete.obs", method="spearman")
+cormat.excl   <- cor(data.excl[,6:ncol(data.excl)], use="pairwise.complete.obs", method="spearman")
 corrplot(cormat.excl,method="color",tl.cex=.4,tl.col = "black")#,order="hclust")
+cor.test(cormat.crop[lower.tri(cormat.crop, diag = FALSE)],cormat.excl[lower.tri(cormat.excl, diag = FALSE)],method = "spearman")
 
-cormat.family <- cor(data.family[,2:ncol(data.family)], use="pairwise.complete.obs", method="spearman")
+cormat.family <- cor(data.family[,6:ncol(data.family)], use="pairwise.complete.obs", method="spearman")
 corrplot(cormat.family,method="color",tl.cex=.4,tl.col = "black")#,order="hclust")
+cor.test(cormat.crop[lower.tri(cormat.crop, diag = FALSE)],cormat.family[lower.tri(cormat.family, diag = FALSE)],method = "spearman")
+
+cormat.scan   <- cor(data.scan[,6:ncol(data.scan)], use="pairwise.complete.obs", method="spearman")
+corrplot(cormat.scan,method="color",tl.cex=.4,tl.col = "black")#,order="hclust")
+cor.test(cormat.crop[lower.tri(cormat.crop, diag = FALSE)],cormat.scan[lower.tri(cormat.scan, diag = FALSE)],method = "spearman")
+
+######### Site-specific correlation matrices #########
+sites     <- unique(data.crop$site_id_l)
+sites     <- sites[!is.na(sites)]
+site_size <- matrix(0, ncol = 1, nrow = 21)
+site_corr <- matrix(0, ncol = 21, nrow = 136)
+count     <- 0
+
+for (i in sites) {
+    count              <- count+1
+    tmp_data           <- data.crop[which(data.crop[,2]==i),6:ncol(data.crop)]
+    site_corrmat       <- cor(tmp_data, use="pairwise.complete.obs", method="spearman")
+    site_corr[,count]  <- site_corrmat[lower.tri(site_corrmat, diag = FALSE)]
+    site_size[count,1] <- nrow(tmp_data)
+    rm(tmp_data, site_corrmat)
+}
+
+site_xcor <- cor(site_corr,method = "spearman")
+site_xcor <- site_xcor[1:20,1:20] # Exclude 21st site with 31 participants
+min(site_xcor[lower.tri(site_xcor, diag = FALSE)])
+max(site_xcor[lower.tri(site_xcor, diag = FALSE)])
+mean(site_xcor[lower.tri(site_xcor, diag = FALSE)])
+sd(site_xcor[lower.tri(site_xcor, diag = FALSE)])
 
 ######### Visualization #########
 data.vis <- data.family
